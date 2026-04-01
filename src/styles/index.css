@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-bg-deep: #050505;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.5);
+  --shadow-glow-sm: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+@layer base {
+  body {
+    @apply bg-[#050505] text-white selection:bg-blue-500/30;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-black/40 backdrop-blur-2xl border border-white/5 rounded-3xl transition-all duration-500;
+  }
+  
+  .premium-gradient-bg {
+    background: radial-gradient(circle at 50% -20%, rgba(59, 130, 246, 0.08) 0%, transparent 70%),
+                radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white/40;
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  }
+
+  .shadow-glow-blue {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+  }
+
+  /* Custom Scrollbar for Terminals */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Base Utility Overrides */
+@utility pointer-events-none {
+  pointer-events: none;
+}

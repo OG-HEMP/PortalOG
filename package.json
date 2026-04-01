@@ -1,0 +1,42 @@
+{
+  "name": "portal-og",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.10.0",
+    "axios": "^1.3.4",
+    "clsx": "^1.2.1",
+    "framer-motion": "^10.0.0",
+    "lucide-react": "^1.7.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^1.10.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-c8": "^0.33.0",
+    "autoprefixer": "^10.4.27",
+    "jsdom": "^29.0.1",
+    "msw": "^2.12.14",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^4.9.3",
+    "vite": "^8.0.3",
+    "vitest": "^4.1.2"
+  }
+}
