@@ -49,22 +49,28 @@ Deno.serve(async (req: Request) => {
       email: p.email,
       company_name: p.organization?.name || "Unknown",
       job_title: p.title || "N/A",
-      industry: p.organization?.industry || "N/A",
+      linkedin_url: p.linkedin_url,
       status: "DISCOVERED",
-      discovery_data: { 
+      contact_info: { 
         apollo_id: p.id,
-        linkedin_url: p.linkedin_url,
+        email_status: p.email_status || "unverified",
         sourced_at: new Date().toISOString()
       },
-      hardening_score: 0,
-      intelligence_data: {},
+      intelligence: {
+        icp_score: 0,
+        last_researched_at: null
+      },
       action_data: {}
-    })).filter((l: any) => l.email); // Must have email
+    })).filter((l: any) => l.email);
 
     if (leadUnits.length > 0) {
+      console.log(`Upserting ${leadUnits.length} leads into portal_leads...`);
       const { error: upsertError } = await supabase
         .from("portal_leads")
-        .upsert(leadUnits, { onConflict: "email" });
+        .upsert(leadUnits, { 
+          onConflict: "email",
+          ignoreDuplicates: false // We want to update discovery_data if they are re-discovered
+        });
 
       if (upsertError) throw upsertError;
     }

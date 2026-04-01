@@ -10,16 +10,12 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
     const { record, lead_ids } = await req.json().catch(() => ({}));
 
-    // Target leads to process: either single trigger record or explicit batch IDs
     let targetLeads = [];
     if (record) {
       targetLeads = [record];
@@ -27,7 +23,6 @@ Deno.serve(async (req: Request) => {
       const { data } = await supabase.from("portal_leads").select("*").in("id", lead_ids);
       targetLeads = data || [];
     } else {
-      // Periodic fallback: fetch batch of discovered leads
       const { data } = await supabase
         .from("portal_leads")
         .select("*")
@@ -37,66 +32,70 @@ Deno.serve(async (req: Request) => {
     }
 
     if (targetLeads.length === 0) {
-      return new Response(JSON.stringify({ message: "No targets to harden." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ message: "Zero leads to harden." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    console.log(`Hardening ${targetLeads.length} leads via Apollo Enrichment...`);
+    console.log(`Hardening batch of ${targetLeads.length} via Apollo...`);
 
-    // Bulk Enrich via Apollo Multi-Email API
+    // Extract Apollo IDs or emails for enrichment
+    const enrichBody = {
+      api_key: apolloKey,
+      person_ids: targetLeads.map(l => l.contact_info?.apollo_id).filter(Boolean),
+      emails: targetLeads.map(l => l.email).filter(e => !targetLeads.find(l2 => l2.email === e)?.contact_info?.apollo_id)
+    };
+
     const enrichmentRes = await fetch("https://api.apollo.io/v1/people/bulk_enrich", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: apolloKey,
-        person_ids: targetLeads.map(l => l.apollo_id).filter(Boolean)
-      })
+      body: JSON.stringify(enrichBody)
     });
     
     const enrichData = await enrichmentRes.json();
     const people = enrichData.people || [];
 
-    const hardeningResults = targetLeads.map((lead: any) => {
-      const enrichedPerson = people.find((p: any) => p.id === lead.apollo_id);
+    const hardeningUpdates = targetLeads.map((lead: any) => {
+      const p = people.find((pers: any) => pers.email === lead.email || pers.id === lead.contact_info?.apollo_id);
       
-      // Verification logic: email_status: 'verified' or 'extrapolated'
-      const isVerified = enrichedPerson?.email_status === 'verified';
-      const email = enrichedPerson?.email || lead.email;
+      const isVerified = p?.email_status === 'verified';
+      const score = isVerified ? 100 : (p?.email ? 70 : 40);
       
-      const score = isVerified ? 100 : (email ? 60 : 30);
-      
+      // Map back to schema: intelligence, contact_info
       return {
         id: lead.id,
-        email: email,
-        status: score >= 60 ? "HARDENED" : "FLAGGED",
-        intelligence_data: {
-          ...lead.intelligence_data,
-          hardening_score: score,
-          email_status: enrichedPerson?.email_status || "unknown",
-          hardened_at: new Date().toISOString()
+        status: score >= 70 ? "HARDENED" : "FLAGGED",
+        contact_info: {
+          ...lead.contact_info,
+          email_status: p?.email_status || lead.contact_info?.email_status,
+          phone: p?.phone_number || lead.contact_info?.phone,
+          organization: p?.organization || null,
+          verification_report: {
+            source: "apollo_bulk_enrich",
+            timestamp: new Date().toISOString(),
+            confidence_score: score
+          }
         },
-        engine_error: score < 60 ? "Low confidence email/contact status" : null,
+        intelligence: {
+          ...lead.intelligence,
+          hardening_score: score,
+          last_hardened_at: new Date().toISOString()
+        },
         updated_at: new Date().toISOString()
       };
     });
 
-    // Bulk update
     const { error: updateError } = await supabase
       .from("portal_leads")
-      .upsert(hardeningResults);
+      .upsert(hardeningUpdates, { onConflict: "id" });
 
     if (updateError) throw updateError;
 
     return new Response(JSON.stringify({
       success: true,
-      count: hardeningResults.length,
-      message: `Hardening complete for ${hardeningResults.length} records.`
+      modified: hardeningUpdates.length
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err: any) {
     console.error("Hardening Error:", err.message);
-    return new Response(JSON.stringify({ error: err.message }), { 
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
 });
