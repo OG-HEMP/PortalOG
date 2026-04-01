@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const freshsalesApiKey = import.meta.env.VITE_FRESHSALES_API_KEY;
-const freshsalesDomain = import.meta.env.VITE_FRESHSALES_DOMAIN;
+const freshsalesApiKey = import.meta.env.FRESHSALES_API_KEY;
+const freshsalesDomain = import.meta.env.FRESHSALES_DOMAIN;
 
 export const FreshsalesService = {
   getFields: async () => {

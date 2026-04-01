@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apolloKey = import.meta.env.VITE_APOLLO_API_KEY;
+const apolloKey = import.meta.env.APOLLO_API_KEY;
 
 export const ApolloService = {
   testConnection: async () => {
